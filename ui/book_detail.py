@@ -112,7 +112,6 @@ class BookDetailView(QWidget):
         if not book:
             return
 
-        # 戻るボタン
         back_btn = QPushButton("← 戻る")
         back_btn.setFixedHeight(32)
         back_btn.setStyleSheet(f"""
@@ -129,7 +128,6 @@ class BookDetailView(QWidget):
         """)
         back_btn.clicked.connect(lambda: self.window().show_book_list())
 
-        # 編集ボタン
         edit_book_btn = QPushButton("✏️ 編集")
         edit_book_btn.setFixedHeight(32)
         edit_book_btn.setStyleSheet(f"""
@@ -147,7 +145,6 @@ class BookDetailView(QWidget):
         """)
         edit_book_btn.clicked.connect(self.edit_book)
 
-        # 削除ボタン
         delete_book_btn = QPushButton("🗑️ この本を削除")
         delete_book_btn.setFixedHeight(32)
         delete_book_btn.setStyleSheet(f"""
@@ -171,7 +168,6 @@ class BookDetailView(QWidget):
         header_row.addWidget(edit_book_btn)
         header_row.addWidget(delete_book_btn)
 
-        # 書名・著者・ISBNエリア
         info_card = QFrame()
         info_card.setStyleSheet(f"""
             QFrame {{
@@ -242,7 +238,6 @@ class BookDetailView(QWidget):
         info_layout.addWidget(isbn_label)
         info_layout.addWidget(tag_label)
 
-        # スレッド一覧
         threads_label = QLabel("この本のスレッド")
         threads_label.setStyleSheet(f"""
             font-size: 16px;
@@ -328,6 +323,6 @@ class BookDetailView(QWidget):
 
     def open_create_dialog(self):
         from ui.thread_create import ThreadCreateDialog
-        dialog = ThreadCreateDialog(self)
+        dialog = ThreadCreateDialog(self, book_id=self.book_id)
         if dialog.exec():
             self.load_book()

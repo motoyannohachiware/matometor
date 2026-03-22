@@ -1,9 +1,9 @@
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout,
-    QLabel, QLineEdit, QPushButton, QTextEdit, QComboBox
+    QLabel, QLineEdit, QPushButton, QComboBox
 )
 from PyQt6.QtCore import Qt
-from db.models.book import add_book, get_book_by_isbn
+from db.models.book import add_book, get_book_by_isbn, get_book_by_id
 from db.models.thread import add_thread
 from db.models.tag import get_all_tags
 
@@ -18,8 +18,9 @@ COLORS = {
 
 
 class ThreadCreateDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, book_id=None):
         super().__init__(parent)
+        self.existing_book_id = book_id
         self.setWindowTitle("スレッド作成")
         self.setMinimumWidth(500)
         self.setStyleSheet(f"background-color: {COLORS['bg_content']};")
@@ -28,7 +29,6 @@ class ThreadCreateDialog(QDialog):
         layout.setContentsMargins(24, 24, 24, 24)
         layout.setSpacing(16)
 
-        # タイトル
         title_label = QLabel("スレッド作成")
         title_label.setStyleSheet(f"""
             font-size: 18px;
@@ -36,9 +36,12 @@ class ThreadCreateDialog(QDialog):
             color: {COLORS['text_primary']};
         """)
 
-        # ISBN入力
-        isbn_layout = QHBoxLayout()
+        # 入力フィールドを先に作成
         self.isbn_input = self._make_input("ISBNを入力（任意）")
+        self.title_input = self._make_input("書名（必須）")
+        self.author_input = self._make_input("著者名（任意）")
+        self.thread_title_input = self._make_input("スレッドタイトル（必須）")
+
         self.isbn_btn = QPushButton("検索")
         self.isbn_btn.setFixedHeight(36)
         self.isbn_btn.setStyleSheet(f"""
@@ -55,17 +58,11 @@ class ThreadCreateDialog(QDialog):
             }}
         """)
         self.isbn_btn.clicked.connect(self.search_isbn)
+
+        isbn_layout = QHBoxLayout()
         isbn_layout.addWidget(self.isbn_input)
         isbn_layout.addWidget(self.isbn_btn)
 
-        # 書誌情報
-        self.title_input = self._make_input("書名（必須）")
-        self.author_input = self._make_input("著者名（任意）")
-
-        # スレッドタイトル
-        self.thread_title_input = self._make_input("スレッドタイトル（必須）")
-
-        # タグ選択
         self.tag_combo = QComboBox()
         self.tag_combo.setFixedHeight(36)
         self.tag_combo.setStyleSheet(f"""
@@ -82,12 +79,9 @@ class ThreadCreateDialog(QDialog):
         for tag in get_all_tags():
             self.tag_combo.addItem(tag['name'], tag['id'])
 
-        # エラーメッセージ
         self.error_label = QLabel("")
         self.error_label.setStyleSheet("color: red; font-size: 12px;")
 
-        # ボタン
-        btn_layout = QHBoxLayout()
         self.cancel_btn = QPushButton("キャンセル")
         self.cancel_btn.setFixedHeight(36)
         self.cancel_btn.setStyleSheet(f"""
@@ -123,16 +117,46 @@ class ThreadCreateDialog(QDialog):
         """)
         self.create_btn.clicked.connect(self.create_thread)
 
+        btn_layout = QHBoxLayout()
         btn_layout.addStretch()
         btn_layout.addWidget(self.cancel_btn)
         btn_layout.addWidget(self.create_btn)
 
         layout.addWidget(title_label)
-        layout.addLayout(isbn_layout)
-        layout.addWidget(QLabel("書名"))
-        layout.addWidget(self.title_input)
-        layout.addWidget(QLabel("著者名"))
-        layout.addWidget(self.author_input)
+
+        if book_id:
+            # 既存の本が指定されている場合は書誌情報を自動入力して非表示に
+            book = get_book_by_id(book_id)
+            if book:
+                self.title_input.setText(book['title'])
+                self.author_input.setText(book['author'] or "")
+                self.isbn_input.setText(book['isbn'] or "")
+
+                from db.models.tag import get_tags_by_book
+                current_tags = get_tags_by_book(book_id)
+                if current_tags:
+                    for i in range(self.tag_combo.count()):
+                        if self.tag_combo.itemData(i) == current_tags[0]['id']:
+                            self.tag_combo.setCurrentIndex(i)
+                            break
+
+                book_info_label = QLabel(f"📖 {book['title']}　{book['author'] or ''}")
+                book_info_label.setStyleSheet(f"""
+                    font-size: 14px;
+                    color: {COLORS['text_secondary']};
+                    padding: 8px 12px;
+                    background-color: {COLORS['bg_card']};
+                    border: 1px solid {COLORS['border']};
+                    border-radius: 6px;
+                """)
+                layout.addWidget(book_info_label)
+        else:
+            layout.addLayout(isbn_layout)
+            layout.addWidget(QLabel("書名"))
+            layout.addWidget(self.title_input)
+            layout.addWidget(QLabel("著者名"))
+            layout.addWidget(self.author_input)
+
         layout.addWidget(QLabel("スレッドタイトル"))
         layout.addWidget(self.thread_title_input)
         layout.addWidget(QLabel("タグ"))
@@ -162,7 +186,6 @@ class ThreadCreateDialog(QDialog):
             self.error_label.setText("ISBNを入力してください")
             return
 
-        # まずDBに登録済みか確認
         existing = get_book_by_isbn(isbn)
         if existing:
             self.title_input.setText(existing['title'])
@@ -170,7 +193,6 @@ class ThreadCreateDialog(QDialog):
             self.error_label.setText("登録済みの本が見つかりました")
             return
 
-        # Google Books APIで検索
         self.error_label.setText("検索中...")
         from services.google_books import search_by_isbn
         result = search_by_isbn(isbn)
@@ -180,9 +202,7 @@ class ThreadCreateDialog(QDialog):
             self.author_input.setText(result['author'] or "")
             self.error_label.setText("書誌情報を取得しました")
 
-        # カテゴリが取得できた場合タグと照合
             if result['category']:
-                from db.models.tag import get_all_tags
                 tags = get_all_tags()
                 for i, tag in enumerate(tags):
                     if result['category'].lower() in tag['name'].lower():
@@ -190,6 +210,7 @@ class ThreadCreateDialog(QDialog):
                         break
         else:
             self.error_label.setText("書誌情報が見つかりませんでした。手動で入力してください")
+
     def create_thread(self):
         book_title = self.title_input.text().strip()
         thread_title = self.thread_title_input.text().strip()
@@ -204,8 +225,9 @@ class ThreadCreateDialog(QDialog):
         isbn = self.isbn_input.text().strip() or None
         author = self.author_input.text().strip() or None
 
-        # 本の登録
-        if isbn:
+        if self.existing_book_id:
+            book_id = self.existing_book_id
+        elif isbn:
             existing = get_book_by_isbn(isbn)
             book_id = existing['id'] if existing else add_book(
                 title=book_title, author=author, isbn=isbn
@@ -213,14 +235,13 @@ class ThreadCreateDialog(QDialog):
         else:
             book_id = add_book(title=book_title, author=author)
 
-        # タグの紐付け
         tag_id = self.tag_combo.currentData()
         if tag_id:
             from db.models.tag import add_book_tag
             try:
                 add_book_tag(book_id=book_id, tag_id=tag_id)
             except Exception:
-                pass  # すでに紐付け済みの場合は無視
+                pass
 
         thread_id = add_thread(book_id=book_id, title=thread_title)
         self.created_thread_id = thread_id
