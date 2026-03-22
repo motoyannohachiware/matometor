@@ -1,3 +1,4 @@
+cat > ~/dev/matometor/.github/workflows/build.yml << 'EOF'
 name: Build
 
 on:
@@ -9,10 +10,10 @@ jobs:
   build-mac:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -31,7 +32,7 @@ jobs:
           zip -r matometor_mac.zip matometor.app
 
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: matometor_mac
           path: dist/matometor_mac.zip
@@ -39,10 +40,10 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -61,7 +62,8 @@ jobs:
           Compress-Archive -Path matometor -DestinationPath matometor_windows.zip
 
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: matometor_windows
           path: dist/matometor_windows.zip
+EOF
