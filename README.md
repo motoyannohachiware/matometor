@@ -36,6 +36,15 @@
 - Windows（未確認。動作報告歓迎）
 - Python 3.9以上
 
+**注意**: macOS 26（Tahoe）ベータ版では.appファイルが正常に動作しない場合があります。その場合はpython main.pyでの起動をお試しください。
+
+cd ~/dev/matometor
+source .venv/bin/activate
+python main.py
+```
+
+または`run.command`をダブルクリックで起動してください。
+
 ---
 
 ## セットアップ
