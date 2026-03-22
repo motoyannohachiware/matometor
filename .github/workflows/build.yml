@@ -23,18 +23,18 @@ jobs:
 
       - name: Build
         run: |
-          pyinstaller --windowed --icon=assets/matometor.png --name=matometor --add-data="assets:assets" main.py
+          pyinstaller --windowed --icon=assets/matometor.png --name=matometor --add-data="assets:assets" --target-arch arm64 main.py
 
       - name: Zip
         run: |
           cd dist
-          zip -r matometor_mac.zip matometor.app
+          zip -r matometor_mac_arm64.zip matometor.app
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: matometor_mac
-          path: dist/matometor_mac.zip
+          name: matometor_mac_arm64
+          path: dist/matometor_mac_arm64.zip
 
   build-windows:
     runs-on: windows-latest
