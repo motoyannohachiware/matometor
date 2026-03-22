@@ -48,6 +48,28 @@ python main.py
 
 ## セットアップ
 
+## macOSユーザー向けクイックスタート
+
+### 1. ソースコードをダウンロード
+GitHubの「Code」→「Download ZIP」でダウンロードして解凍してください。
+
+### 2. Pythonをインストール
+[python.org](https://www.python.org/downloads/)から3.9以上をダウンロードしてインストールしてください。
+
+### 3. ターミナルで以下を実行
+```bash
+cd ダウンロードしたフォルダのパス
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 4. 起動
+セットアップ完了後は`run.command`をダブルクリックするだけで起動できます。
+
+### 注意
+macOS 26（Tahoe）ベータ版では.appファイルが正常に動作しない場合があります。
+
 ### 1. リポジトリをクローン
 ```bash
 git clone https://github.com/あなたのユーザー名/matometor.git
