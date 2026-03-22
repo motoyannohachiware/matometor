@@ -63,6 +63,8 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+このときセキュリティの関係でアプリを開けませんが、
+設定の「プライバシーとセキュリティ」から許可すれば”run.command”をダブルクリックで開けます。
 
 ### 4. 起動
 セットアップ完了後は`run.command`をダブルクリックするだけで起動できます。
