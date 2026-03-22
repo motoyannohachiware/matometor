@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/shirakawamika/dev/matometor/main.py", line 21, in <module>
+    sys.exit(app.exec())
+KeyboardInterrupt

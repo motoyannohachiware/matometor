@@ -1,0 +1,9 @@
+.env
+.venv
+__pycache__
+data/matometor.db
+data/covers/
+data/backups/
+dist/
+build/
+*.spec
