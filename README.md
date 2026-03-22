@@ -32,7 +32,8 @@
 
 ## 動作環境
 
-- macOS / Windows
+- macOS（動作確認済み）
+- Windows（未確認。動作報告歓迎）
 - Python 3.9以上
 
 ---
