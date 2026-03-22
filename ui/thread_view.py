@@ -3,7 +3,6 @@ from PyQt6.QtWidgets import (
     QLabel, QPushButton, QTextEdit, QFrame, QScrollArea
 )
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QTextCursor
 import re
 from db.models.thread import get_thread_by_id
 from db.models.post import get_posts_by_thread, add_post, update_post, delete_post
@@ -37,7 +36,6 @@ class PostCard(QFrame):
         layout.setContentsMargins(16, 12, 16, 12)
         layout.setSpacing(8)
 
-        # ヘッダー
         header_layout = QHBoxLayout()
 
         number_label = QLabel(f"#{post['number']}")
@@ -93,20 +91,14 @@ class PostCard(QFrame):
         header_layout.addWidget(edit_btn)
         header_layout.addWidget(delete_btn)
 
-        # 本文（アンカーをリンクボタンに変換）
         body_widget = self._build_body(post['body'], on_anchor_click)
 
         layout.addLayout(header_layout)
         layout.addWidget(body_widget)
 
     def _build_body(self, body, on_anchor_click):
-        """本文内の>>Nをクリック可能なリンクに変換する"""
         container = QWidget()
         container.setStyleSheet("background: transparent;")
-        container.setSizePolicy(
-            container.sizePolicy().horizontalPolicy(),
-            container.sizePolicy().verticalPolicy()
-        )
 
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -162,6 +154,7 @@ class PostCard(QFrame):
 
         return container
 
+
 class ThreadView(QWidget):
     def __init__(self, thread_id, on_back, parent=None):
         super().__init__(parent)
@@ -185,16 +178,38 @@ class ThreadView(QWidget):
         self.inner_layout.setSpacing(12)
 
         self.scroll.setWidget(self.inner_widget)
-        outer_layout.addWidget(self.scroll)
 
-        # 投稿フォーム
-        form_widget = QWidget()
-        form_widget.setStyleSheet(f"""
+        # 投稿フォーム（格納式）
+        self.form_widget = QWidget()
+        self.form_widget.setStyleSheet(f"""
             background-color: {COLORS['bg_card']};
             border-top: 1px solid {COLORS['border']};
         """)
-        form_layout = QHBoxLayout(form_widget)
-        form_layout.setContentsMargins(24, 12, 24, 12)
+        form_main_layout = QVBoxLayout(self.form_widget)
+        form_main_layout.setContentsMargins(0, 0, 0, 0)
+        form_main_layout.setSpacing(0)
+
+        self.toggle_bar = QPushButton("▲ レスを投稿")
+        self.toggle_bar.setFixedHeight(36)
+        self.toggle_bar.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {COLORS['bg_card']};
+                border: none;
+                border-top: 1px solid {COLORS['border']};
+                font-size: 13px;
+                color: {COLORS['accent']};
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background-color: {COLORS['bg_hover']};
+            }}
+        """)
+        self.toggle_bar.clicked.connect(self.toggle_form)
+
+        self.form_content = QWidget()
+        self.form_content.setStyleSheet("background-color: transparent;")
+        form_content_layout = QHBoxLayout(self.form_content)
+        form_content_layout.setContentsMargins(24, 12, 24, 12)
 
         self.post_input = QTextEdit()
         self.post_input.setPlaceholderText("レスを入力... （>>番号 でアンカー）")
@@ -227,10 +242,79 @@ class ThreadView(QWidget):
         """)
         self.submit_btn.clicked.connect(self.submit_post)
 
-        form_layout.addWidget(self.post_input)
-        form_layout.addWidget(self.submit_btn)
+        form_content_layout.addWidget(self.post_input)
+        form_content_layout.addWidget(self.submit_btn)
 
-        outer_layout.addWidget(form_widget)
+        self.form_content.hide()
+
+        form_main_layout.addWidget(self.toggle_bar)
+        form_main_layout.addWidget(self.form_content)
+
+        # ヘッダーエリア（固定）
+        header_widget = QWidget()
+        header_widget.setStyleSheet(f"background-color: {COLORS['bg_content']};")
+        header_layout_outer = QHBoxLayout(header_widget)
+        header_layout_outer.setContentsMargins(24, 12, 24, 0)
+
+        self.back_btn = QPushButton("← 戻る")
+        self.back_btn.setFixedHeight(32)
+        self.back_btn.setStyleSheet(f"""
+            QPushButton {{
+                text-align: left;
+                border: none;
+                background-color: transparent;
+                font-size: 13px;
+                color: {COLORS['accent']};
+            }}
+            QPushButton:hover {{
+                text-decoration: underline;
+            }}
+        """)
+        self.back_btn.clicked.connect(self.on_back)
+
+        self.pdf_btn = QPushButton("📄 PDF出力")
+        self.pdf_btn.setFixedHeight(32)
+        self.pdf_btn.setStyleSheet(f"""
+            QPushButton {{
+                border: 1px solid {COLORS['border']};
+                border-radius: 6px;
+                padding: 0 12px;
+                font-size: 13px;
+                background-color: {COLORS['bg_card']};
+                color: {COLORS['text_primary']};
+            }}
+            QPushButton:hover {{
+                background-color: {COLORS['bg_hover']};
+            }}
+        """)
+        self.pdf_btn.clicked.connect(self.export_pdf)
+
+        self.delete_thread_btn = QPushButton("🗑️ スレッド削除")
+        self.delete_thread_btn.setFixedHeight(32)
+        self.delete_thread_btn.setStyleSheet(f"""
+            QPushButton {{
+                border: 1px solid {COLORS['border']};
+                border-radius: 6px;
+                padding: 0 12px;
+                font-size: 13px;
+                background-color: {COLORS['bg_card']};
+                color: #cc0000;
+            }}
+            QPushButton:hover {{
+                background-color: #ffe0e0;
+            }}
+        """)
+        self.delete_thread_btn.clicked.connect(self.delete_thread)
+
+        header_layout_outer.addWidget(self.back_btn)
+        header_layout_outer.addStretch()
+        header_layout_outer.addWidget(self.pdf_btn)
+        header_layout_outer.addWidget(self.delete_thread_btn)
+
+        outer_layout.addWidget(header_widget)
+
+        outer_layout.addWidget(self.scroll)
+        outer_layout.addWidget(self.form_widget)
 
         self.load_thread()
 
@@ -246,65 +330,6 @@ class ThreadView(QWidget):
         if not thread:
             return
 
-        # ヘッダー行
-        header_row = QHBoxLayout()
-
-        back_btn = QPushButton("← 戻る")
-        back_btn.setFixedHeight(32)
-        back_btn.setStyleSheet(f"""
-            QPushButton {{
-                text-align: left;
-                border: none;
-                background-color: transparent;
-                font-size: 13px;
-                color: {COLORS['accent']};
-            }}
-            QPushButton:hover {{
-                text-decoration: underline;
-            }}
-        """)
-        back_btn.clicked.connect(self.on_back)
-
-        pdf_btn = QPushButton("📄 PDF出力")
-        pdf_btn.setFixedHeight(32)
-        pdf_btn.setStyleSheet(f"""
-            QPushButton {{
-                border: 1px solid {COLORS['border']};
-                border-radius: 6px;
-                padding: 0 12px;
-                font-size: 13px;
-                background-color: {COLORS['bg_card']};
-                color: {COLORS['text_primary']};
-            }}
-            QPushButton:hover {{
-                background-color: {COLORS['bg_hover']};
-            }}
-        """)
-        pdf_btn.clicked.connect(self.export_pdf)
-
-        delete_thread_btn = QPushButton("🗑️ スレッド削除")
-        delete_thread_btn.setFixedHeight(32)
-        delete_thread_btn.setStyleSheet(f"""
-            QPushButton {{
-                border: 1px solid {COLORS['border']};
-                border-radius: 6px;
-                padding: 0 12px;
-                font-size: 13px;
-                background-color: {COLORS['bg_card']};
-                color: #cc0000;
-            }}
-            QPushButton:hover {{
-                background-color: #ffe0e0;
-            }}
-        """)
-        delete_thread_btn.clicked.connect(self.delete_thread)
-
-        header_row.addWidget(back_btn)
-        header_row.addStretch()
-        header_row.addWidget(pdf_btn)
-        header_row.addWidget(delete_thread_btn)
-
-        # スレッドタイトル
         title_label = QLabel(thread['title'])
         title_label.setStyleSheet(f"""
             font-size: 20px;
@@ -313,10 +338,8 @@ class ThreadView(QWidget):
         """)
         title_label.setWordWrap(True)
 
-        self.inner_layout.addLayout(header_row)
         self.inner_layout.addWidget(title_label)
 
-        # レス一覧
         posts = get_posts_by_thread(self.thread_id)
         for post in posts:
             card = PostCard(post, self.on_edit, self.on_delete, self.scroll_to_anchor)
@@ -328,10 +351,19 @@ class ThreadView(QWidget):
         if thread['is_archived']:
             self.submit_btn.setEnabled(False)
             self.post_input.setEnabled(False)
-            self.post_input.setPlaceholderText("過去ログのため投稿できません")
+            self.toggle_bar.setText("過去ログのため投稿できません")
+            self.toggle_bar.setEnabled(False)
+
+    def toggle_form(self):
+        if self.form_content.isVisible():
+            self.form_content.hide()
+            self.toggle_bar.setText("▲ レスを投稿")
+        else:
+            self.form_content.show()
+            self.toggle_bar.setText("▼ レスを投稿")
+            self.post_input.setFocus()
 
     def scroll_to_anchor(self, number):
-        """指定番号のレスにスクロールする"""
         if number in self.post_cards:
             card = self.post_cards[number]
             QTimer.singleShot(0, lambda: self.scroll.ensureWidgetVisible(card))
@@ -360,7 +392,6 @@ class ThreadView(QWidget):
                 self.load_thread()
                 self.submit_btn.setEnabled(False)
                 self.post_input.setEnabled(False)
-                self.post_input.setPlaceholderText("100レスに達しました")
         else:
             add_post(thread_id=self.thread_id, body=body)
             self.post_input.clear()
@@ -388,7 +419,6 @@ class ThreadView(QWidget):
             self.load_thread()
             self.submit_btn.setEnabled(False)
             self.post_input.setEnabled(False)
-            self.post_input.setPlaceholderText("100レスに達しました")
 
     def on_edit(self, post):
         from PyQt6.QtWidgets import QInputDialog
