@@ -103,67 +103,64 @@ class PostCard(QFrame):
         """本文内の>>Nをクリック可能なリンクに変換する"""
         container = QWidget()
         container.setStyleSheet("background: transparent;")
-        layout = QHBoxLayout(container)
+        container.setSizePolicy(
+            container.sizePolicy().horizontalPolicy(),
+            container.sizePolicy().verticalPolicy()
+        )
+
+        layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        layout.setSpacing(4)
 
-        parts = re.split(r'(>>\d+)', body)
+        lines = body.split('\n')
+        for line in lines:
+            parts = re.split(r'(>>\d+)', line)
+            line_widget = QWidget()
+            line_widget.setStyleSheet("background: transparent;")
+            line_layout = QHBoxLayout(line_widget)
+            line_layout.setContentsMargins(0, 0, 0, 0)
+            line_layout.setSpacing(0)
 
-        body_layout = QVBoxLayout()
-        body_layout.setContentsMargins(0, 0, 0, 0)
-        body_layout.setSpacing(0)
-
-        line_layout = QHBoxLayout()
-        line_layout.setContentsMargins(0, 0, 0, 0)
-        line_layout.setSpacing(0)
-
-        for part in parts:
-            if re.match(r'>>\d+', part):
-                number = int(part[2:])
-                btn = QPushButton(part)
-                btn.setFlat(True)
-                btn.setCursor(Qt.CursorShape.PointingHandCursor)
-                btn.setStyleSheet(f"""
-                    QPushButton {{
-                        color: {COLORS['accent']};
-                        font-size: 14px;
-                        border: none;
-                        background: transparent;
-                        padding: 0;
-                        text-decoration: underline;
-                    }}
-                    QPushButton:hover {{
-                        color: #e55a10;
-                    }}
-                """)
-                btn.clicked.connect(lambda checked, n=number: on_anchor_click(n))
-                line_layout.addWidget(btn)
-            else:
-                lines = part.split('\n')
-                for i, line in enumerate(lines):
-                    if i > 0:
-                        body_layout.addLayout(line_layout)
-                        line_layout = QHBoxLayout()
-                        line_layout.setContentsMargins(0, 0, 0, 0)
-                        line_layout.setSpacing(0)
-                    if line:
-                        label = QLabel(line)
+            for part in parts:
+                if re.match(r'>>\d+', part):
+                    number = int(part[2:])
+                    btn = QPushButton(part)
+                    btn.setFlat(True)
+                    btn.setCursor(Qt.CursorShape.PointingHandCursor)
+                    btn.setStyleSheet(f"""
+                        QPushButton {{
+                            color: {COLORS['accent']};
+                            font-size: 14px;
+                            border: none;
+                            background: transparent;
+                            padding: 0;
+                            text-decoration: underline;
+                        }}
+                        QPushButton:hover {{
+                            color: #e55a10;
+                        }}
+                    """)
+                    btn.clicked.connect(lambda checked, n=number: on_anchor_click(n))
+                    line_layout.addWidget(btn)
+                else:
+                    if part:
+                        label = QLabel(part)
                         label.setStyleSheet(f"""
                             font-size: 14px;
                             color: {COLORS['text_primary']};
                             border: none;
                         """)
                         label.setWordWrap(True)
-                        line_layout.addWidget(label)
+                        label.setSizePolicy(
+                            QLabel().sizePolicy().horizontalPolicy(),
+                            QLabel().sizePolicy().verticalPolicy()
+                        )
+                        line_layout.addWidget(label, stretch=1)
 
-        body_layout.addLayout(line_layout)
-        body_layout.addStretch()
-
-        layout.addLayout(body_layout)
-        layout.addStretch()
+            line_layout.addStretch()
+            layout.addWidget(line_widget)
 
         return container
-
 
 class ThreadView(QWidget):
     def __init__(self, thread_id, on_back, parent=None):
