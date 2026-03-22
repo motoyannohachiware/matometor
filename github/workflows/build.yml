@@ -1,0 +1,67 @@
+name: Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller Pillow
+
+      - name: Build
+        run: |
+          pyinstaller --windowed --icon=assets/matometor.png --name=matometor --add-data="assets:assets" main.py
+
+      - name: Zip
+        run: |
+          cd dist
+          zip -r matometor_mac.zip matometor.app
+
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: matometor_mac
+          path: dist/matometor_mac.zip
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller Pillow
+
+      - name: Build
+        run: |
+          pyinstaller --windowed --icon=assets/matometor.png --name=matometor --add-data="assets;assets" main.py
+
+      - name: Zip
+        run: |
+          cd dist
+          Compress-Archive -Path matometor -DestinationPath matometor_windows.zip
+
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: matometor_windows
+          path: dist/matometor_windows.zip
