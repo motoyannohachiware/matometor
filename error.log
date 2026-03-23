@@ -1,8 +1,4 @@
 Traceback (most recent call last):
-  File "/Users/shirakawamika/dev/matometor/ui/top.py", line 60, in mousePressEvent
-    main_window.show_thread(self.thread_id)
-  File "/Users/shirakawamika/dev/matometor/ui/main_window.py", line 193, in show_thread
-    self._switch_content(ThreadView(thread_id, on_back=self.show_top))
-  File "/Users/shirakawamika/dev/matometor/ui/thread_view.py", line 325, in __init__
-    title_label = QLabel(thread['title'])
-NameError: name 'thread' is not defined
+  File "/Users/shirakawamika/dev/matometor/main.py", line 21, in <module>
+    sys.exit(app.exec())
+KeyboardInterrupt
