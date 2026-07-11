@@ -5,7 +5,10 @@ import sys
 def get_app_dir():
     """アプリのデータ保存先ディレクトリを返す"""
     if getattr(sys, 'frozen', False):
-        # PyInstallerでビルドされた場合はホームディレクトリ以下に保存
+        # PyInstallerでビルドされた場合
+        app_dir = os.path.join(os.path.expanduser('~'), 'matometor_data')
+    elif getattr(sys, '_MEIPASS', None):
+        # py2appでビルドされた場合
         app_dir = os.path.join(os.path.expanduser('~'), 'matometor_data')
     else:
         # 開発時はプロジェクトルートのdataフォルダ
