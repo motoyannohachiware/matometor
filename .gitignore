@@ -7,3 +7,4 @@ data/backups/
 dist/
 build/
 *.spec
+echo ".DS_Store" >> ~/dev/matometor/.gitignore
